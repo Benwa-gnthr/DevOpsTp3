@@ -24,7 +24,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mon-app:prod
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/cv:prod
   
   # Ce nouveau job se connecte au VPS et déploie l'application
   deploy:
@@ -51,4 +51,4 @@ jobs:
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mon-app:prod
             
             # Lance un nouveau conteneur avec la nouvelle image
-            docker run -d --name mon-app-container -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/mon-app:prod
+            docker run -d --name mon-app-container -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/cv:prod
