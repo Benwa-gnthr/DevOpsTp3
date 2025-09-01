@@ -6,12 +6,7 @@ on:
       - prod
 
 jobs:
-  hello_prod:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Say Hello Prod
-        run: echo "Hello prod"
-  
+  # Ce job s'assure que la nouvelle image est disponible sur Docker Hub
   push_image:
     runs-on: ubuntu-latest
     steps:
@@ -30,3 +25,30 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/mon-app:prod
+  
+  # Ce nouveau job se connecte au VPS et déploie l'application
+  deploy:
+    needs: push_image # S'assure que l'image est bien poussée avant de commencer le déploiement
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Se connecte à Docker Hub sur le VPS
+            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            
+            # Stoppe le conteneur en cours (s'il existe)
+            docker stop mon-app-container || true
+            
+            # Supprime l'ancien conteneur
+            docker rm mon-app-container || true
+            
+            # Pull la dernière version de l'image
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mon-app:prod
+            
+            # Lance un nouveau conteneur avec la nouvelle image
+            docker run -d --name mon-app-container -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/mon-app:prod
